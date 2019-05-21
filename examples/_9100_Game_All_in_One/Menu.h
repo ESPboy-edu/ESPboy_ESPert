@@ -396,7 +396,9 @@ class Menu : public Game {
   private:
     typedef enum {
       SOUND_NONE,
-      SOUND_VOLUME
+      SOUND_VOLUME,
+      SOUND_SCROLL,
+      SOUND_SELECT
     } SoundType;
 
     Game* game;

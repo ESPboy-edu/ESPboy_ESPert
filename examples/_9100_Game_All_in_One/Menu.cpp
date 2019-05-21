@@ -2,6 +2,7 @@
 
 using namespace menu;
 
+
 Menu::Menu() {
 }
 
@@ -37,24 +38,35 @@ void Menu::moveRight() {
 }
 
 void Menu::playSound(int index) {
-  if (isSoundEnabled) {
+  if (isSoundEnabled && button[BUTTON_LEFT].isOff() && button[BUTTON_RIGHT].isOff()) {
     nextSound = SOUND_NONE;
     nextSoundDelay = 0.0f;
     int frequency = 0;
 
     switch (index) {
       case SOUND_VOLUME:
-        frequency = 25;
-        soundDuration = 100.0f;
+        frequency = 1000;
+        soundDuration = 40.0f;
+        break;
+      
+      case SOUND_SCROLL:
+        frequency = 150;
+        soundDuration = 30.0f;
         break;
 
+      case SOUND_SELECT:
+        frequency = 100;
+        soundDuration = 30.0f;
+        break;
+      
       default:
         frequency = 0;
         soundDuration = 0.0f;
         break;
     }
 
-    espert->buzzer.on((int)constrain(frequency * volume, 0.0f, 25.0f));
+    espert->buzzer.on((int)constrain(frequency * volume, 0.0f, 25000.0f));
+    delay(20);
   }
 }
 
@@ -64,11 +76,12 @@ void Menu::pressButton() {
       if (buttonPin[i] != -1) {
         bool isPressed = false;
 
-        if (buttonPin[i] == A0) {
-          isPressed = (batteryA0Value >= batteryA0Min) ? false : true;
-        } else {
-          isPressed = (digitalRead(buttonPin[i]) == LOW) ? true : false;
-        }
+      if (buttonPin[i] == A0) {
+        isPressed = (batteryA0Value >= batteryA0Min) ? false : true;
+      } 
+      else {
+        isPressed = button[i].isOn();
+      }
 
         if (isPressed != isButtonPressed[i]) {
           isButtonPressed[i] = isPressed;
@@ -82,6 +95,7 @@ void Menu::pressButton() {
               }
             } else if (i == pressedButton && targetOffset == 0.0f) {
               if (i == BUTTON_A) {
+                playSound(SOUND_SELECT);
                 switch (currentGame) {
                   case GAME_PAC_MAN:
                     game = new pacMan::PacMan();
@@ -212,9 +226,11 @@ void Menu::update() {
     }
   } else {
     if (isButtonPressed[BUTTON_LEFT]) {
+      playSound(SOUND_SCROLL);
       pressButtonTime += elapsedTime;
       moveRight();
     } else if (isButtonPressed[BUTTON_RIGHT]) {
+      playSound(SOUND_SCROLL);
       pressButtonTime += elapsedTime;
       moveLeft();
     } else {

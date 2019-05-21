@@ -4,6 +4,7 @@
 
 using namespace flappyBird;
 
+
 FlappyBird::FlappyBird() {
   // game
   gameMode = GAME_MODE_TITLE;
@@ -27,7 +28,7 @@ FlappyBird::FlappyBird() {
   heightRatio = 0.0f;
   gravity = 9.8f;
   velocity = 0.0f;
-  initialVelocity = -2.5f;
+  initialVelocity = -1.5f;
   birdPosition = {21, (screenSize.height - birdSize.height) * 0.5f};
   dropPosition = 0.0f;
   isHit = false;
@@ -35,7 +36,7 @@ FlappyBird::FlappyBird() {
 
   // land
   landSize = {128, 4};
-  landSpeed = 25.0f / 1000.0f;
+  landSpeed = LAND_SPEED_INITIAL;
   landOffset = {0.0f, screenSize.height - landSize.height};
   landPosition = screenSize.height - birdSize.height - landSize.height;
 
@@ -222,7 +223,7 @@ void FlappyBird::playSound(int index) {
         break;
     }
 
-    espert->buzzer.on((int)constrain(frequency * volume, 0.0f, 25.0f));
+    espert->buzzer.on((int)constrain(frequency * volume, 0.0f, 250000.0f));
   }
 }
 
@@ -233,8 +234,9 @@ void FlappyBird::pressButton() {
 
       if (buttonPin[i] == A0) {
         isPressed = (batteryA0Value >= batteryA0Min) ? false : true;
-      } else {
-        isPressed = (digitalRead(buttonPin[i]) == LOW) ? true : false;
+      } 
+      else {
+        isPressed = button[i].isOn();
       }
 
       if (isPressed != isButtonPressed[i]) {
@@ -487,6 +489,7 @@ void FlappyBird::update() {
       break;
 
     case GAME_MODE_GET_READY:
+      landSpeed = LAND_SPEED_INITIAL;
       updateBirdAnimation(false);
 
       if (birdPosition.y >= 20 + (gameMode == GAME_MODE_TITLE ? 5 : 0)) {
@@ -502,6 +505,7 @@ void FlappyBird::update() {
       break;
 
     case GAME_MODE_PLAY:
+      if (landSpeed < LAND_SPEED_INITIAL * 6) landSpeed+=0.00003f;
       updateBirdAnimation(true);
 
       if (isGameOver) {
