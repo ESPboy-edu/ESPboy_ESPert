@@ -649,7 +649,7 @@ void FlappyBird::updateBirdAnimation(bool rotate) {
       birdFrameDirection *= -1;
     }
 
-    velocity += gravity * (elapsedTime / 1300.0f);
+    velocity += gravity * (elapsedTime / 1250.0f);
     birdPosition.y = constrain(birdPosition.y + velocity, 0, landPosition);
 
     if (birdPosition.y == 0.0f) {
