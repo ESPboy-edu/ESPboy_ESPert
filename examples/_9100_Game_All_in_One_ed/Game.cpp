@@ -26,6 +26,7 @@ Game::Game() {
   isButtonAllowed = true;
   memset(buttonPin, -1, sizeof(buttonPin));
 
+/*
 #ifdef ARDUINO_ESP8266_ESPRESSO_LITE_V1
   buttonPin[0] = 0; // USER
   buttonPin[1] = 2; // FLASH
@@ -33,6 +34,7 @@ Game::Game() {
   buttonPin[0] = 0; // GPIO0
   buttonPin[1] = 13; // GPIO13
 #endif
+*/
 
   // sound
   soundDuration = 0.0f;
@@ -87,7 +89,7 @@ Game::GameIndex Game::getGameIndex() {
 }
 
 int Game::getBatteryVoltage() {
-  batteryA0Value = analogRead(A0);
+  batteryA0Value = 700;//analogRead(A0);
 
   if (batteryA0Value > batteryA0Min) {
     batteryFilters[batteryFiltersIndex++ % batteryMaxValues] = batteryA0Value;
@@ -133,32 +135,39 @@ void Game::initGame() {
 }
 
 void Game::init(ESPert* e, bool menu, bool syncInternetTime, int hh, int mm, int ss) {
+
   isMenuEnabled = menu;
   isSyncInternetTime = syncInternetTime;
   hours = hh;
   minutes = mm;
   seconds = ss;
 
-  isGamepadEnabled = (analogRead(A0) > batteryA0Min) ? true : false;
+  isGamepadEnabled = true;// (analogRead(A0) > batteryA0Min) ? true : false;
 
   espert = e;
   espert->oled.init();
+  
   espert->buzzer.init(isGamepadEnabled ? 15 : 12);
   espert->buzzer.on(1);
   espert->buzzer.on(0);
 
-  int gamepadPin[numberOfButtons] = {12, 13, 14, 2, 0, A0}; // (left, right, up, down, a, b)
-  for (int i = 0; i < numberOfButtons; i++) {
-    if (isGamepadEnabled) {
-      buttonPin[i] = gamepadPin[i];
-    }
+  buttonPin[0] = PAD_LEFT;
+  buttonPin[1] = PAD_RIGHT;
+  buttonPin[2] = PAD_UP;
+  buttonPin[3] = PAD_DOWN;
+  buttonPin[4] = PAD_ACT;
+  buttonPin[5] = PAD_ESC;
+  
+  button[0].init(PAD_LEFT);
+  button[1].init(PAD_RIGHT);
+  button[2].init(PAD_UP);
+  button[3].init(PAD_DOWN);
+  button[4].init(PAD_ACT);
+  button[5].init(PAD_ESC);
 
-    if (buttonPin[i] != -1) {
-      button[i].init(buttonPin[i], INPUT_PULLUP);
-    }
-  }
-
-  randomSeed(analogRead(0));
+  memset(isButtonPressed, 0, numberOfButtons);
+     
+  randomSeed(analogRead(A0));
   initGame();
   resetGameTime();
   timeSyncLastFrameTime = lastFrameTime;
@@ -166,6 +175,7 @@ void Game::init(ESPert* e, bool menu, bool syncInternetTime, int hh, int mm, int
 
   initBattery();
 }
+
 
 bool Game::isBackToMenuEnabled() {
   return false;

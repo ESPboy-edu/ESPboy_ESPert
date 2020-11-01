@@ -121,12 +121,11 @@ void Octopus::pressButton() {
       if (buttonPin[i] != -1) {
         bool isPressed = false;
 
-      if (buttonPin[i] == A0) {
-        isPressed = (batteryA0Value >= batteryA0Min) ? false : true;
-      } 
-      else {
-        isPressed = button[i].isOn();
-      }
+        if (buttonPin[i] == A0) {
+          isPressed = (batteryA0Value >= batteryA0Min) ? false : true;
+        } else {
+          isPressed = (digitalRead(buttonPin[i]) == LOW) ? true : false;
+        }
 
         if (isPressed != isButtonPressed[i]) {
           isButtonPressed[i] = isPressed;
@@ -641,7 +640,7 @@ void Octopus::playSound(int index) {
         break;
     }
 
-    espert->buzzer.on((int)constrain(frequency * volume, 0.0f, 25000.0f));
+    espert->buzzer.on((int)constrain(frequency * volume, 0.0f, 25.0f));
   }
 }
 

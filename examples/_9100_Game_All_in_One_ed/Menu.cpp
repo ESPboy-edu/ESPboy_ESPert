@@ -67,7 +67,7 @@ void Menu::pressButton() {
         if (buttonPin[i] == A0) {
           isPressed = (batteryA0Value >= batteryA0Min) ? false : true;
         } else {
-          isPressed = (digitalRead(buttonPin[i]) == LOW) ? true : false;
+          isPressed = button[i].isOn();
         }
 
         if (isPressed != isButtonPressed[i]) {

@@ -3,8 +3,6 @@
 #ifndef _GAME_FLAPPY_BIRD_H_
 #define _GAME_FLAPPY_BIRD_H_
 
-#define LAND_SPEED_INITIAL 25.0/1000.0f
-
 #include "Game.h"
 
 namespace flappyBird {

@@ -499,7 +499,7 @@ void Breakout::playSound(int index) {
         break;
     }
 
-    espert->buzzer.on((int)constrain(frequency * volume, 0.0f, 25000.0f));
+    espert->buzzer.on((int)constrain(frequency * volume, 0.0f, 25.0f));
   }
 }
 
@@ -510,9 +510,8 @@ void Breakout::pressButton() {
 
       if (buttonPin[i] == A0) {
         isPressed = (batteryA0Value >= batteryA0Min) ? false : true;
-      } 
-      else {
-        isPressed = button[i].isOn();
+      } else {
+        isPressed = (digitalRead(buttonPin[i]) == LOW) ? true : false;
       }
 
       if (isPressed != isButtonPressed[i]) {

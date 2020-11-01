@@ -138,44 +138,21 @@ void Game::init(ESPert* e, bool menu, bool syncInternetTime, int hh, int mm, int
   hours = hh;
   minutes = mm;
   seconds = ss;
-  int gamepadPin[numberOfButtons];
+
+  isGamepadEnabled = (analogRead(A0) > batteryA0Min) ? true : false;
 
   espert = e;
   espert->oled.init();
+  espert->buzzer.init(isGamepadEnabled ? 15 : 12);
+  espert->buzzer.on(1);
+  espert->buzzer.on(0);
 
-  if (ESPertBoardType == 20){ //if ESPboy board
-    isGamepadEnabled = true;
-    espert->buzzer.init(D3);
-    espert->buzzer.on(1);
-    espert->buzzer.off();
-    
-    if(isGamepadEnabled){
-      gamepadPin[0] = 0; // (left, right, up, down, a, b) 
-      gamepadPin[1] = 3;
-      gamepadPin[2] = 1;
-      gamepadPin[3] = 2;
-      gamepadPin[4] = 4;
-      gamepadPin[5] = 5;
-    }
-  }
-  else{ //if any espresso board
-    isGamepadEnabled = (analogRead(A0) > batteryA0Min) ? true : false;
-    espert->buzzer.init(isGamepadEnabled ? 15 : 12); 
-    if(isGamepadEnabled && numberOfButtons==6){
-      gamepadPin[0] = 12; // (left, right, up, down, a, b) 
-      gamepadPin[1] = 13;
-      gamepadPin[2] = 14;
-      gamepadPin[3] = 2;
-      gamepadPin[4] = 0;
-      gamepadPin[5] = A0;
-    }
-  }
-  
+  int gamepadPin[numberOfButtons] = {12, 13, 14, 2, 0, A0}; // (left, right, up, down, a, b)
   for (int i = 0; i < numberOfButtons; i++) {
     if (isGamepadEnabled) {
       buttonPin[i] = gamepadPin[i];
     }
-    
+
     if (buttonPin[i] != -1) {
       button[i].init(buttonPin[i], INPUT_PULLUP);
     }

@@ -1,14 +1,17 @@
 #include "ESPert.h"
+#include "ESPboyInit.h"
+#include "ESPboyRender.h"
 
-const float ESPERT_LIBRARY_VERSION = 0.15f;
+const float ESPERT_LIBRARY_VERSION = 5;
 
-int ESPertBoardType = NULL;
+int ESPertBoardType = ESPERT_BOARD_ESPRESSO_LITE2; // default
 
-int ESPERT_PIN_LED = NULL;
-int ESPERT_PIN_BUTTON = NULL;
-int ESPERT_PIN_SDA = 4;
-int ESPERT_PIN_SCL = 5;
-int ESPERT_PIN_DHT = NULL;
+//int ESPERT_PIN_LED = 16;
+int ESPERT_PIN_LED = D4;
+int ESPERT_PIN_BUTTON = -1;
+//int ESPERT_PIN_SDA = 4;
+//int ESPERT_PIN_SCL = 5;
+int ESPERT_PIN_DHT = -1;
 int ESPERT_DHT_TYPE = DHT22;
 
 const long ESPertFlashID[] = {0x1640EF, 0x1340C8, 0x1340EF}; // Little Endian
@@ -16,8 +19,6 @@ const String ESPertFlashDesc[] = {"WINBOND W25Q32: 32M-bit / 4M-byte", "GIGADEVI
 
 ESP8266WebServer* ESPertServer = NULL;
 MDNSResponder ESPertMDNS;
-Adafruit_MCP23017 mcp;
-
 
 String ESPertNetworks[32] = {""};
 int ESPertNumberOfNetworks = 0;
@@ -32,6 +33,9 @@ String ESPertContent = "";
 String ESPertReadString; // rx tx buffer
 
 static ESPert* _espert = NULL;
+
+ESPboyInit 	myESPboy;
+ESPboyRender display(&myESPboy.tft);
 
 ESPert::ESPert() {
   _espert = this;
@@ -64,60 +68,49 @@ bool ESPert::checkFlashSize() {
 }
 
 void ESPert::init(int type, long baud) {
+
+  myESPboy.begin("ESPERT project");
+  display.init();
+
+ ESPertBoardType = ESPRERT_ESPBOY_BOARD;
+/*  
   // user-defined board.
   if (type != -1) {
     ESPertBoardType = type;
   }
   else {
-    #ifdef ESPERT_BOARD_ESPRESSO_LITE1
-      ESPertBoardType = ESPERT_BOARD_ESPRESSO_LITE1;
-    #endif
+#ifdef ARDUINO_ESP8266_ESPRESSO_LITE_V2
+    ESPertBoardType = ESPERT_BOARD_ESPRESSO_LITE2;
+#endif
 
-    #ifdef ESPERT_BOARD_ESPRESSO_LITE2
-      ESPertBoardType = ESPERT_BOARD_ESPRESSO_LITE2;
-    #endif
-  
-  #ifdef ESPERT_BOARD_ESPBOY
-    ESPertBoardType = ESPERT_BOARD_ESPBOY;
-  #endif
+    // wait for the new release to fix this issue
+#ifdef ARDUINO_ESP8266_espresso_lite_v2
+    ESPertBoardType = ESPERT_BOARD_ESPRESSO_LITE2;
+#endif
+
+#ifdef ARDUINO_ESP8266_ESPRESSO_LITE_V1
+    ESPertBoardType = ESPERT_BOARD_ESPRESSO_LITE1;
+#endif
   }
-  
-  #ifdef ESPERT_BOARD_ESPRESSO_LITE1
-    ESPERT_PIN_LED = 16;
-    ESPERT_PIN_BUTTON = 2;
-    ESPERT_PIN_DHT = 12;
-  #endif
 
-  #ifdef ESPERT_BOARD_ESPRESSO_LITE2
+  if (ESPertBoardType == ESPERT_BOARD_ESPRESSO_LITE2) {
     ESPERT_PIN_LED = 2;
     ESPERT_PIN_BUTTON = 13;
-    ESPERT_PIN_DHT = 12;
-  #endif
-  
-  #ifdef ESPERT_BOARD_ESPBOY
-    ESPERT_PIN_LED = NULL;
-    ESPERT_PIN_BUTTON = NULL;
-  #endif
-
+  }
+*/
   Serial.begin(baud);
   EEPROM.begin(512);
-  #ifdef ESPERT_BOARD_ESPBOY
-    mcp.begin(0x27);
-  #endif
-  
-  
+
   wdt_disable();
   wdt_enable(WDTO_8S);
-  
-  led.init();
-  button.init();
 
-  delay(500);
+  led.init();
+  //button.init();
 
   checkFlashSize();
 
   Serial.printf("ESPertBoardType = %d\r\n", ESPertBoardType);
-
+/*
   _espert->ota.on_progress([](unsigned int progress, unsigned int total) {
     Serial.printf("%u%% [%u/%u] @[%u]\r\n",
                   (progress / (total / 100)), progress, total, millis());
@@ -125,7 +118,7 @@ void ESPert::init(int type, long baud) {
 
   ArduinoOTA.setHostname(_espert->info.getId().c_str());
   _espert->ota.init();
-
+*/
 }
 
 int ESPert::getBoardType() {
@@ -517,27 +510,14 @@ int ESPert_BLE::getTXPower() {
 // Button class
 // ****************************************
 ESPert_Button::ESPert_Button() {
-#ifdef ESPERT_BOARD_ESPBOY
-  mcpclass = &mcp;
-  mcp.begin(0x27);
-#endif 
   currentButtonStatus = false;
   buttonPressTime = millis();
   buttonPin = ESPERT_PIN_BUTTON;
   isLongPressEnabled = true;
 }
 
-void ESPert_Button::init(int pin, int mode) {
-  if (pin == -1) buttonPin = ESPERT_PIN_BUTTON;
-  else buttonPin = pin;
-  
-  #ifdef ESPERT_BOARD_ESPBOY
-    mcpclass->pinMode(buttonPin, INPUT);
-    mcpclass->pullUp(buttonPin, HIGH);
-  #else
-    pinMode(buttonPin, (mode == -1) ? INPUT_PULLUP : mode);
-  #endif 
-  
+void ESPert_Button::init(int pin) {
+  buttonPin = pin;
   currentButtonStatus = false;
   buttonPressTime = millis();
   isLongPressEnabled = true;
@@ -547,8 +527,7 @@ long ESPert_Button::getPressTime() {
   if (isOn()) {
     return millis() - buttonPressTime;
   }
-
-  return 0l;
+  else return 0l;
 }
 
 void ESPert_Button::resetPressTime() {
@@ -570,42 +549,42 @@ void ESPert_Button::disableLongPress() {
 }
 
 bool ESPert_Button::isOn() {
-  #ifdef ESPERT_BOARD_ESPBOY
-    int status = mcpclass->digitalRead(buttonPin);
-  #else
-    int status = digitalRead(buttonPin);
-  #endif  
-  //delay(100);
-  bool buttonPressed = (status == LOW) ? true : false;
+  //int status = digitalRead(buttonPin);
+  int status = (myESPboy.getKeys()&buttonPin);
+  //delay(10);
+  delay(5);
+  bool buttonPressed = (status) ? true : false;
+
   if (buttonPressed != currentButtonStatus) {
     if (buttonPressed) {
       buttonPressTime = millis();
     }
+
     currentButtonStatus = buttonPressed;
   }
+
   return buttonPressed;
 }
 
 bool ESPert_Button::isOff() {
-  #ifdef ESPERT_BOARD_ESPBOY
-    int status = mcpclass->digitalRead(buttonPin);
-  #else
-    int status = digitalRead(buttonPin);
-  #endif 
-  //delay(100);
-  return (status == HIGH) ? true : false;
+  //int status = digitalRead(buttonPin);
+  int status = (myESPboy.getKeys()&buttonPin);
+  //delay(10);
+  delay(5);
+  return (!status) ? true : false;
 }
 
 bool ESPert_Button::get() {
-  #ifdef ESPERT_BOARD_ESPBOY
-    int status = mcpclass->digitalRead(buttonPin); 
-  #else
-    int status = digitalRead(buttonPin);
-  #endif 
-  //delay(100);
-  return (status == HIGH) ? true : false;
+  //int status = digitalRead(buttonPin);
+  int status = (myESPboy.getKeys()&buttonPin);
+  //delay(10);
+  delay(5);
+  return (status) ? true : false;
 }
 
+int ESPert_Button::getPin() {
+  return buttonPin;
+}
 
 // ****************************************
 // DHT class
@@ -753,9 +732,9 @@ void ESPert_LED::init(int pin) {
   } else {
     ledPin = pin;
   }
+
   pinMode(ledPin, OUTPUT);
   off();
-
 }
 
 void ESPert_LED::on() {
@@ -767,19 +746,19 @@ void ESPert_LED::off() {
 }
 
 void ESPert_LED::set(bool state) {
-  #ifdef ESPERT_BOARD_ESP201
+  if (ESPertBoardType == ESPERT_BOARD_ESP201) {
     digitalWrite(ledPin, (state ? HIGH : LOW));
-  #else
+  } else {
     digitalWrite(ledPin, (state ? LOW : HIGH));
-  #endif
+  }
 }
 
 int ESPert_LED::get() {
-  #ifdef ESPERT_BOARD_ESP201
+  if (ESPertBoardType == ESPERT_BOARD_ESP201) {
     return (digitalRead(ledPin) == 1 ? 1 : 0);
-  #else
+  } else {
     return (digitalRead(ledPin) == 1 ? 0 : 1);
-  #endif
+  }
 }
 
 bool ESPert_LED::isOn() {
@@ -798,37 +777,24 @@ int ESPert_LED::getPin() {
 // OLED class
 // ****************************************
 ESPert_OLED::ESPert_OLED() {
-  display = NULL;
+  display_ = 1;
 }
 
 void ESPert_OLED::init() {
-  if (!display) {
-   display = new SSD1306(0x3c, ESPERT_PIN_SDA, ESPERT_PIN_SCL);  
-  // display = new SH1106(0x3c, ESPERT_PIN_SDA, ESPERT_PIN_SCL);
-
-#if (SSD1306_LCDHEIGHT != 64)
-    //#error("Height incorrect, please fix Adafruit_SSD1306.h!");
-#endif
-
-    if (display) {
       // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
-      //display->begin(SSD1306_SWITCHCAPVCC, 0x3C, true, ESPERT_PIN_SDA, ESPERT_PIN_SCL);  // initialize with the I2C addr 0x3D (for the 128x64)
-      display->init();
-      display->flipScreenVertically();
-      
-      display->clear();
-      drawBitmap(0, 0, espboylogo, 128, 64, ESPERT_WHITE, true);
-      delay(2000);
+      //display.begin(SSD1306_SWITCHCAPVCC, 0x3C, true, ESPERT_PIN_SDA, ESPERT_PIN_SCL);  // initialize with the I2C addr 0x3D (for the 128x64)
+      display.init();
+      display.flipScreenVertically();
 
-      display->clear();
-      drawBitmap(0, 0, espertlogo, 128, 64, ESPERT_WHITE, true);
+      display.clear();
+      drawBitmap(0, 0, logo, 128, 64, ESPERT_WHITE, true);
       delay(1000);
       // init done
 
       // Show image buffer on the display hardware.
       // Since the buffer is intialized with an Adafruit splashscreen
       // internally, this will display the splashscreen.
-      display->display();
+      display.display();
 
       wdt_disable();
       wdt_enable(WDTO_8S);
@@ -836,12 +802,11 @@ void ESPert_OLED::init() {
       setTextSize(1);
       setTextColor(ESPERT_WHITE);
       setCursor(0, 0);
-    }
-  }
+      display.clear();
 }
 
 bool ESPert_OLED::isReady() {
-  return (display ? true : false);
+  return (display_ ? true : false);
 }
 
 #if ARDUINO >= 100
@@ -862,7 +827,7 @@ void ESPert_OLED::write(uint8_t c)
     cursorY += charHeight;
     return 1;
   }
-  display->drawString(cursorX, cursorY, String(t));
+  display.drawString(cursorX, cursorY, String(t));
   cursorX += charWidth;
   if ((cursorX + charWidth) > maxX) {
     cursorX = 0;
@@ -875,33 +840,33 @@ void ESPert_OLED::write(uint8_t c)
 }
 
 void ESPert_OLED::clear(bool clearImmediately) {
-  if (display) {
-    display->clear();
+  if (display_) {
+    display.clear();
     setCursor(0, 0);
 
     if (clearImmediately) {
-      display->display();
+      display.display();
     }
   }
 }
 
 void ESPert_OLED::setTextSize(uint8_t s) {
-  if (display) {
-    //display->setTextSize(s);
+  if (display_) {
+    //display.setTextSize(s);
     charWidth = 6;
     charHeight = 8;
   }
 }
 
 void ESPert_OLED::setTextColor(uint16_t c) {
-  if (display) {
-    display->setColor((OLEDDISPLAY_COLOR)c);
+  if (display_) {
+    //display.setColor((OLEDDISPLAY_COLOR)c);
   }
 }
 
 void ESPert_OLED::setColor(uint16_t c) {
-  if (display) {
-    display->setColor((OLEDDISPLAY_COLOR)c);
+  if (display_) {
+    display.setColor(c);
   }
 }
 
@@ -919,35 +884,35 @@ int16_t ESPert_OLED::getCursorY() {
 }
 
 void ESPert_OLED::drawBitmap(int16_t x, int16_t y, const uint8_t* bitmap, int16_t w, int16_t h, uint16_t color, bool drawImmediately) {
-  if (display) {
-    display->setColor((OLEDDISPLAY_COLOR)color);
-    display->drawXbm(x, y, w, h, (const char*)bitmap);
+  if (display_) {
+    display.setColor(color);
+    display.drawXbm(x, y, w, h, bitmap);
 
     if (drawImmediately) {
-      display->display();
+      display.display();
     }
   }
 }
 
 void ESPert_OLED::drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t* bitmap, bool drawImmediately) {
-  if (display) {
-    display->drawXbm(x, y, w, h, (const char*)bitmap);
-
+  if (display_) {
+    display.drawXbm(x, y, w, h, bitmap);
     if (drawImmediately) {
-      display->display();
+      display.display();
     }
   }
 }
 
 void ESPert_OLED::update() {
-  if (display) {
-    display->display();
+  if (display_) {
+    display.display();
   }
 }
 
-SSD1306* ESPert_OLED::getDisplay() { 
-//SH1106* ESPert_OLED::getDisplay() { 
-  return display;
+//SSD1306* ESPert_OLED::getDisplay() {
+uint8_t ESPert_OLED::getDisplay() {
+  return (1);
+  //return display;
 }
 
 // ****************************************
@@ -1503,12 +1468,12 @@ void ESPert_WiFi::initSetupServer() {
 
         if (n == 0) {
           _espert->println("ESPert: No auto connect available!");
- 
-         #ifdef ESPERT_BOARD_ESP201
-           digitalWrite(ESPERT_PIN_LED, LOW);
-         #else
-           digitalWrite(ESPERT_PIN_LED, HIGH);
-         #endif 
+
+          if (ESPertBoardType == ESPERT_BOARD_ESP201) {
+            digitalWrite(ESPERT_PIN_LED, LOW);
+          } else {
+            digitalWrite(ESPERT_PIN_LED, HIGH);
+          }
 
           break;
         }
@@ -1516,19 +1481,19 @@ void ESPert_WiFi::initSetupServer() {
         _espert->print(n);
         _espert->wifi.drawProgress(x, y, &progress);
 
-         #ifdef ESPERT_BOARD_ESP201
-           digitalWrite(ESPERT_PIN_LED, HIGH);
-         #else
-           digitalWrite(ESPERT_PIN_LED, LOW);
-         #endif 
+        if (ESPertBoardType == ESPERT_BOARD_ESP201) {
+          digitalWrite(ESPERT_PIN_LED, HIGH);
+        } else {
+          digitalWrite(ESPERT_PIN_LED, LOW);
+        }
 
         delay(50);
 
-         #ifdef ESPERT_BOARD_ESP201
-           digitalWrite(ESPERT_PIN_LED, LOW);
-         #else
-           digitalWrite(ESPERT_PIN_LED, HIGH);
-         #endif 
+        if (ESPertBoardType == ESPERT_BOARD_ESP201) {
+          digitalWrite(ESPERT_PIN_LED, LOW);
+        } else {
+          digitalWrite(ESPERT_PIN_LED, HIGH);
+        }
 
         c++;
         ESP.wdtFeed();
@@ -1559,13 +1524,13 @@ void ESPert_WiFi::initSetupServer() {
 void ESPert_WiFi::disconnect(bool reset) {
   _espert->println("ESPert: WiFi disconnected!");
 
-  #ifdef ESPERT_BOARD_ESP201
+  if (ESPertBoardType == ESPERT_BOARD_ESP201) {
     _espert->eeprom.write(237, "ESPert:Disconnect");
     _espert->println("ESPert: WiFi disconnect on restart!");
-  #else
+  } else {
     WiFi.disconnect();
-    delay(100);         
-  #endif 
+    delay(100);
+  }
 
   if (reset) {
     ESP.reset();
@@ -1814,24 +1779,20 @@ int ESPert_GroveRelay::get() {
 // Buzzer Class
 // ****************************************
 void ESPert_Buzzer::init(int pin) {
-  this->pin = pin;
-  #ifdef ESPERT_BOARD_ESPBOY
-    pinMode(pin,OUTPUT);
-  #endif 
+  this->pin = D3;
 }
 
 void ESPert_Buzzer::beep(int freq, unsigned long duration) {
-    tone(pin, freq, duration);
+  myESPboy.playTone(freq, duration);
 }
 
 void ESPert_Buzzer::on(int freq) {
-    tone(pin, freq);
+  myESPboy.playTone(freq); // Almost any value can be used except 0 and 255 experiment to get the best tone
 }
 
 void ESPert_Buzzer::off() {
-    noTone(pin);
+  myESPboy.noPlayTone();
 }
-
 
 // ****************************************
 // NeoPixel Class

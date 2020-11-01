@@ -1,5 +1,17 @@
 [![Build Status](https://travis-ci.org/JimmySoftware/ESPert.svg?branch=master)](https://travis-ci.org/JimmySoftware/ESPert)
 
+# ESPboy ESPert port of the games
+
+www.espboy.com
+Please note that library was not ported to provide full functionality.
+It was a little bit modified to play games from the example on ESPboy.
+You have to
+1. Download this library and rename its folder to "ESPert"
+2. Install this library to your Arduino IDE
+3. Compile the file with games "_9100_Game_All_in_One_ed.ino" from the "example" folder
+4. Have fun
+
+
 # ESPert
 Welcome to the ESPert Arduino library for users of the ESPresso Lite.
 Please proceed to follow the procedures as prescribed in the ESPresso Lite tutorial (http://espressolite.com).

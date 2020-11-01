@@ -1,15 +1,8 @@
 #ifndef __ESPERT_h__
 #define __ESPERT_h__
 
-//#define ESPERT_BOARD_GENERIC        0
-//#define ESPERT_BOARD_ESPRESSO_LITE  1
-//#define ESPERT_BOARD_ESPRESSO_LITE1 1
-//#define ESPERT_BOARD_ESPRESSO_LITE2 2
-//#define ESPERT_BOARD_ESP201         3
-#define ESPERT_BOARD_ESPBOY           20 //default
-
 #include <Arduino.h>
-#include <SPI.h>
+// #include <SPI.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
@@ -24,14 +17,28 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include "JS_HttpClient.h"
-#include <SSD1306.h>  
-//#include "SH1106.h" 
+
+//#include <SSD1306.h> 
+#include "ESPboyInit.h"
+#include "ESPboyRender.h"
+
+
 #include <Adafruit_NeoPixel.h>
 #include <ArduinoOTA.h>
 #include "logo.h"
-#include "Adafruit_MCP23017.h"
+
 
 extern const float ESPERT_LIBRARY_VERSION;
+
+#define ESPERT_BOARD_GENERIC        0
+
+/*keep it for compatibility with old sketches.*/
+#define ESPERT_BOARD_ESPRESSO_LITE  1
+#define ESPERT_BOARD_ESPRESSO_LITE1 1
+#define ESPERT_BOARD_ESPRESSO_LITE2 2
+#define ESPERT_BOARD_ESP201         3
+#define ESPRERT_ESPBOY_BOARD        200
+
 
 extern int ESPertBoardType; // default
 
@@ -165,7 +172,6 @@ class ESPert_BLE
 class ESPert_Button
 {
   private:
-    Adafruit_MCP23017* mcpclass;
     bool currentButtonStatus;
     long buttonPressTime;
     int buttonPin;
@@ -173,7 +179,7 @@ class ESPert_Button
 
   public:
     ESPert_Button();
-    void init(int pin = -1, int mode = -1);
+    void init(int pin);
     long getPressTime();
     void resetPressTime();
     bool isLongPress();
@@ -261,8 +267,8 @@ class ESPert_LED
 class ESPert_OLED : public Print
 {
   private:
-   SSD1306* display; 
-  // SH1106* display; 
+    //SSD1306* display;
+    uint8_t display_;
 
   public:
     ESPert_OLED();
@@ -278,9 +284,10 @@ class ESPert_OLED : public Print
     void drawBitmap(int16_t x, int16_t y, const uint8_t* bitmap, int16_t w, int16_t h, uint16_t color, bool drawImmediately = true);
     void drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t* bitmap, bool drawImmediately = true);
     void update();
-    SSD1306* getDisplay();
-    //SH1106* getDisplay(); 
     
+    //SSD1306* getDisplay();
+    uint8_t getDisplay();
+
     int cursorX;
     int cursorY;
 
@@ -398,11 +405,7 @@ class ESPERT_NeoPixel // WS2812
     Adafruit_NeoPixel* _neopixel;
 
   public:
-    #ifdef ESPERT_BOARD_ESPBOY
-      void init(uint8_t p = D4, uint8_t n = 1);
-    #else 
-      void init(uint8_t p = 14, uint8_t n = 8);
-    #endif
+    void init(uint8_t p = 14, uint8_t n = 8);
     void setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b);
     void setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w);
     void setPixelColor(uint16_t n, uint32_t c);
@@ -460,8 +463,8 @@ class ESPert : public Print
     ESPert_SoftwareSerial swSerial;
     ESPert_WiFi           wifi;
     ESPert_Buzzer         buzzer;
-    ESPERT_NeoPixel  	    neopixel;
-    ESPert_OTA              ota;
+    ESPERT_NeoPixel  	  neopixel;
+    ESPert_OTA            ota;
 
     ESPert();
     void init(int type = -1, long baud = 115200);

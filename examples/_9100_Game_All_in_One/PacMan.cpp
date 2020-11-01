@@ -438,42 +438,17 @@ void PacMan::playSound(int index) {
     switch (index) {
       case SOUND_EAT_DOT:
         frequency = 20;
-        soundDuration = 10.0f;
+        soundDuration = 20.0f;
         break;
 
       case SOUND_EAT_ITEM:
-        frequency = 1000;
-        soundDuration = 50.0f;
-        isSoundInterruptEnabled = false;
-        break;
-        
       case SOUND_EAT_GHOST:
-        frequency = 30;
-        soundDuration = 200.0f;
-        isSoundInterruptEnabled = false;
-        break;
-      
       case SOUND_EAT_POWER_PELLET:
-        frequency = 400;
-        soundDuration = 50.0f;
-        isSoundInterruptEnabled = false;
-        break;
-        
       case SOUND_DIE:
-        frequency = 30;
-        soundDuration = 700.0f;
-        isSoundInterruptEnabled = false;
-        break;
-        
       case SOUND_DISAPPEAR:
-        frequency = 20;
-        soundDuration = 100.0f;
-        isSoundInterruptEnabled = false;
-        break;
-        
       case SOUND_VOLUME:
-        frequency = 1000;
-        soundDuration = 50.0f;
+        frequency = 25;
+        soundDuration = 100.0f;
         isSoundInterruptEnabled = false;
         break;
 
@@ -483,7 +458,7 @@ void PacMan::playSound(int index) {
         break;
     }
 
-    espert->buzzer.on((int)constrain(frequency * volume, 0.0f, 25000.0f));
+    espert->buzzer.on((int)constrain(frequency * volume, 0.0f, 25.0f));
   }
 }
 
@@ -494,9 +469,8 @@ void PacMan::pressButton() {
 
       if (buttonPin[i] == A0) {
         isPressed = (batteryA0Value >= batteryA0Min) ? false : true;
-      } 
-      else {
-        isPressed = button[i].isOn();
+      } else {
+        isPressed = (digitalRead(buttonPin[i]) == LOW) ? true : false;
       }
 
       if (isPressed != isButtonPressed[i]) {
